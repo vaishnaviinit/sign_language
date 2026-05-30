@@ -1,10 +1,10 @@
-# SignBridge – Real-Time Sign Language Translation Platform
+# SignSync– Real-Time Sign Language Translation Platform
 
 ## Overview
 
-SignBridge is an AI-powered accessibility platform that enables real-time communication between hearing-impaired individuals and the general public. Using Computer Vision, Machine Learning, and Web Technologies, the system detects sign language gestures through a webcam, translates them into text, and optionally converts the translated text into speech.
+SignSync is an AI-powered accessibility platform that enables real-time communication between hearing-impaired individuals and the general public. Using Computer Vision, Machine Learning, and Web Technologies, the system detects sign language gestures through a webcam, translates them into text, and optionally converts the translated text into speech.
 
-The goal of SignBridge is to reduce communication barriers and create a more inclusive environment by providing an intuitive and accessible sign language translation system.
+The goal of SignSync is to reduce communication barriers and create a more inclusive environment by providing an intuitive and accessible sign language translation system.
 
 ---
 
@@ -201,7 +201,7 @@ The predictions are combined to form words and sentences.
 ## Project Structure
 
 ```text
-SignBridge/
+SignSync/
 │
 ├── frontend/
 │   ├── components/
@@ -297,7 +297,7 @@ Future versions can convert speech into animated sign language using virtual ava
 
 ## Impact
 
-SignBridge promotes accessibility and inclusion by enabling seamless communication between hearing-impaired individuals and people unfamiliar with sign language.
+SignSync promotes accessibility and inclusion by enabling seamless communication between hearing-impaired individuals and people unfamiliar with sign language.
 
 The platform leverages Artificial Intelligence and Computer Vision to create a practical solution that can be deployed in educational institutions, healthcare facilities, workplaces, and public service environments.
 
@@ -307,7 +307,7 @@ The platform leverages Artificial Intelligence and Computer Vision to create a p
 
 We believe technology should be accessible to everyone.
 
-SignBridge aims to bridge the communication gap between sign language users and the broader community, creating a more connected and inclusive world through the power of AI.
+SignSync aims to bridge the communication gap between sign language users and the broader community, creating a more connected and inclusive world through the power of AI.
 
 ---
 
@@ -315,4 +315,4 @@ SignBridge aims to bridge the communication gap between sign language users and 
 
 This project is developed for educational, research, and accessibility purposes.
 
-MIT License © 2026 SignBridge Team
+MIT License © 2026 SignSync Team
