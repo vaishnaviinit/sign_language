@@ -1,5 +1,4 @@
 flask
-opencv-python
-mediapipe
+mediapipe==0.10.14
 scikit-learn
 numpy
