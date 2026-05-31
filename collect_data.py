@@ -3,7 +3,7 @@ import csv
 import cv2
 import mediapipe as mp
 
-LABELS = ['A', 'B', 'C', 'D', 'L', 'O', 'V', 'W', 'Y']
+LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y']
 SAMPLES_PER_LABEL = 200
 DATA_FILE = 'data.csv'
 
@@ -13,12 +13,17 @@ hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 
 
 def extract_features(landmarks):
-    min_x = min(point.x for point in landmarks.landmark)
-    min_y = min(point.y for point in landmarks.landmark)
+    xs = [point.x for point in landmarks.landmark]
+    ys = [point.y for point in landmarks.landmark]
+    min_x = min(xs)
+    min_y = min(ys)
+    size = max(max(xs) - min_x, max(ys) - min_y)
+    if size == 0:
+        size = 1
     features = []
     for point in landmarks.landmark:
-        features.append(point.x - min_x)
-        features.append(point.y - min_y)
+        features.append((point.x - min_x) / size)
+        features.append((point.y - min_y) / size)
     return features
 
 
