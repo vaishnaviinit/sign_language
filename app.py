@@ -1,0 +1,67 @@
+import pickle
+import cv2
+import mediapipe as mp
+from flask import Flask, render_template, Response, jsonify
+
+app = Flask(__name__)
+
+with open('model.p', 'rb') as file:
+    model = pickle.load(file)
+
+hands = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
+drawing = mp.solutions.drawing_utils
+hand_connections = mp.solutions.hands.HAND_CONNECTIONS
+
+camera = cv2.VideoCapture(0)
+current_prediction = ''
+
+
+def extract_features(landmarks):
+    min_x = min(point.x for point in landmarks.landmark)
+    min_y = min(point.y for point in landmarks.landmark)
+    features = []
+    for point in landmarks.landmark:
+        features.append(point.x - min_x)
+        features.append(point.y - min_y)
+    return features
+
+
+def generate_frames():
+    global current_prediction
+    while True:
+        ok, frame = camera.read()
+        if not ok:
+            break
+        frame = cv2.flip(frame, 1)
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        result = hands.process(rgb)
+        if result.multi_hand_landmarks:
+            landmarks = result.multi_hand_landmarks[0]
+            drawing.draw_landmarks(frame, landmarks, hand_connections)
+            prediction = model.predict([extract_features(landmarks)])[0]
+            current_prediction = str(prediction)
+            cv2.putText(frame, current_prediction, (20, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
+        else:
+            current_prediction = ''
+        ok, buffer = cv2.imencode('.jpg', frame)
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
+@app.route('/prediction')
+def prediction():
+    return jsonify({'letter': current_prediction})
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
