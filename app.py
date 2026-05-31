@@ -2,6 +2,7 @@ import pickle
 import cv2
 import mediapipe as mp
 from flask import Flask, render_template, Response, jsonify
+from gesture import MotionTracker
 
 app = Flask(__name__)
 
@@ -13,16 +14,22 @@ drawing = mp.solutions.drawing_utils
 hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 
 camera = cv2.VideoCapture(0)
+tracker = MotionTracker()
 current_prediction = ''
 
 
 def extract_features(landmarks):
-    min_x = min(point.x for point in landmarks.landmark)
-    min_y = min(point.y for point in landmarks.landmark)
+    xs = [point.x for point in landmarks.landmark]
+    ys = [point.y for point in landmarks.landmark]
+    min_x = min(xs)
+    min_y = min(ys)
+    size = max(max(xs) - min_x, max(ys) - min_y)
+    if size == 0:
+        size = 1
     features = []
     for point in landmarks.landmark:
-        features.append(point.x - min_x)
-        features.append(point.y - min_y)
+        features.append((point.x - min_x) / size)
+        features.append((point.y - min_y) / size)
     return features
 
 
@@ -38,8 +45,11 @@ def generate_frames():
         if result.multi_hand_landmarks:
             landmarks = result.multi_hand_landmarks[0]
             drawing.draw_landmarks(frame, landmarks, hand_connections)
-            prediction = model.predict([extract_features(landmarks)])[0]
-            current_prediction = str(prediction)
+            gesture = tracker.detect(landmarks)
+            if gesture:
+                current_prediction = gesture
+            else:
+                current_prediction = str(model.predict([extract_features(landmarks)])[0])
             cv2.putText(frame, current_prediction, (20, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
         else:
