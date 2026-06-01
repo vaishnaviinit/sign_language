@@ -1,8 +1,8 @@
-# SignBridge – Real-Time Sign Language to English Translator
+# SignSync – Real-Time Sign Language to English Translator
 
 ## Overview
 
-SignBridge is a web-based application that translates sign language gestures into English text in real time. The system uses a webcam to detect hand gestures, processes them using Computer Vision, and converts them into readable text through a machine learning model.
+SignSync is a web-based application that translates sign language gestures into English text in real time. The system uses a webcam to detect hand gestures, processes them using Computer Vision, and converts them into readable text through a machine learning model.
 
 The goal of this project is to reduce communication barriers between sign language users and people who do not understand sign language by providing a simple, fast, and accessible translation tool.
 
@@ -12,7 +12,7 @@ The goal of this project is to reduce communication barriers between sign langua
 
 Millions of people use sign language as their primary means of communication. However, most people are unable to understand sign language, making everyday interactions difficult.
 
-SignBridge aims to bridge this communication gap by providing a real-time sign language translation system that is easy to use and accessible through a web browser.
+SignSync aims to bridge this communication gap by providing a real-time sign language translation system that is easy to use and accessible through a web browser.
 
 ---
 
@@ -163,4 +163,4 @@ Edit this list to add or remove signs, then collect data and retrain.
 
 This project is developed for educational and accessibility purposes.
 
-MIT License © 2026 SignBridge Team
+MIT License © 2026 SignSync Team

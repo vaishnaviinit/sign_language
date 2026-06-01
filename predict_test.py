@@ -50,7 +50,7 @@ def main():
                 probability = max(model.predict_proba([features])[0])
                 text = str(prediction) + '  ' + str(round(probability * 100)) + '%'
             cv2.putText(frame, text, (20, 60), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
-        cv2.imshow('SignBridge Test', frame)
+        cv2.imshow('SignSync Test', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     camera.release()
