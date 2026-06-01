@@ -1,0 +1,169 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAFAF8;
+  --foreground: #1F2937;
+  --surface: #FFFFFF;
+  --elevated: #F9FAFB;
+  --muted: #F3F4F6;
+  --primary: #4F7DF3;
+  --primary-light: #7B9FF5;
+  --primary-dark: #3563D8;
+  --accent: #6EC6CA;
+  --success: #6BCB77;
+  --warning: #F59E0B;
+  --error: #EF4444;
+  --border: #E5E7EB;
+  --border-soft: #F3F4F6;
+  --text-secondary: #6B7280;
+  --text-muted: #9CA3AF;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-muted-bg: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-light: var(--primary-light);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --color-border: var(--border);
+  --color-secondary: var(--text-secondary);
+  --color-dim: var(--text-muted);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(79, 125, 243, 0.15);
+  color: #1F2937;
+}
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #F3F4F6; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #4F7DF3; }
+
+/* Card style — replaces dark glass */
+.glass {
+  background: #FFFFFF;
+  border: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 4px 20px rgba(0, 0, 0, 0.04);
+}
+
+.glass-primary {
+  background: rgba(79, 125, 243, 0.05);
+  border: 1px solid rgba(79, 125, 243, 0.15);
+}
+
+.glass-accent {
+  background: rgba(110, 198, 202, 0.07);
+  border: 1px solid rgba(110, 198, 202, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, #4F7DF3 0%, #6EC6CA 60%, #6BCB77 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-blue {
+  background: linear-gradient(135deg, #4F7DF3, #6EC6CA);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Soft shadow variants */
+.glow-primary {
+  box-shadow: 0 4px 24px rgba(79, 125, 243, 0.18), 0 1px 4px rgba(79, 125, 243, 0.1);
+}
+
+.glow-accent {
+  box-shadow: 0 4px 24px rgba(110, 198, 202, 0.18), 0 1px 4px rgba(110, 198, 202, 0.1);
+}
+
+/* Gradient border (light version) */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  background: linear-gradient(135deg, #4F7DF3, #6EC6CA, #6BCB77);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  border-radius: inherit;
+  opacity: 0.5;
+}
+
+/* Pulse animation */
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(107, 203, 119, 0.4); }
+  50% { opacity: 0.85; box-shadow: 0 0 0 6px rgba(107, 203, 119, 0); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.pulse-dot {
+  animation: pulse-glow 2s infinite;
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Subtle light grid pattern */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(79, 125, 243, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(79, 125, 243, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 32px rgba(79, 125, 243, 0.12), 0 2px 8px rgba(0, 0, 0, 0.06);
+  transform: translateY(-2px);
+}
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
