@@ -4,6 +4,7 @@ import mediapipe as mp
 from flask import Flask, render_template, Response, jsonify
 from flask_cors import CORS
 from gesture import MotionTracker
+import store
 
 app = Flask(__name__)
 CORS(
@@ -26,6 +27,7 @@ hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 camera = cv2.VideoCapture(0)
 tracker = MotionTracker()
 current_prediction = ''
+STABLE_FRAMES = 10
 
 
 def extract_features(landmarks):
@@ -45,6 +47,9 @@ def extract_features(landmarks):
 
 def generate_frames():
     global current_prediction
+    stable_letter = ''
+    stable_count = 0
+    stored = False
     while True:
         ok, frame = camera.read()
         if not ok:
@@ -62,8 +67,20 @@ def generate_frames():
                 current_prediction = str(model.predict([extract_features(landmarks)])[0])
             cv2.putText(frame, current_prediction, (20, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
+            if current_prediction == stable_letter:
+                stable_count += 1
+            else:
+                stable_letter = current_prediction
+                stable_count = 0
+                stored = False
+            if stable_count == STABLE_FRAMES and not stored:
+                store.add_sign(current_prediction)
+                stored = True
         else:
             current_prediction = ''
+            stable_letter = ''
+            stable_count = 0
+            stored = False
         ok, buffer = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
 
@@ -84,6 +101,16 @@ def video_feed():
 @app.route('/prediction')
 def prediction():
     return jsonify({'letter': current_prediction})
+
+
+@app.route('/history')
+def history():
+    return jsonify({'signs': store.load_history()})
+
+
+@app.route('/clear', methods=['POST'])
+def clear():
+    return jsonify({'signs': store.clear_history()})
 
 
 if __name__ == '__main__':
