@@ -7,8 +7,11 @@ HISTORY_FILE = 'history.json'
 def load_history():
     if not os.path.exists(HISTORY_FILE):
         return []
-    with open(HISTORY_FILE, 'r') as file:
-        return json.load(file)
+    try:
+        with open(HISTORY_FILE, 'r') as file:
+            return json.load(file)
+    except (json.JSONDecodeError, ValueError):
+        return []
 
 
 def save_history(history):

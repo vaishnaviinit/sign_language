@@ -3,7 +3,7 @@ import cv2
 import mediapipe as mp
 from flask import Flask, render_template, Response, jsonify
 from flask_cors import CORS
-from gesture import MotionTracker
+from gesture import MotionTracker, SpaceDetector
 import store
 
 app = Flask(__name__)
@@ -26,6 +26,7 @@ hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 
 camera = cv2.VideoCapture(0)
 tracker = MotionTracker()
+spacer = SpaceDetector()
 current_prediction = ''
 STABLE_FRAMES = 10
 
@@ -60,22 +61,29 @@ def generate_frames():
         if result.multi_hand_landmarks:
             landmarks = result.multi_hand_landmarks[0]
             drawing.draw_landmarks(frame, landmarks, hand_connections)
-            gesture = tracker.detect(landmarks)
-            if gesture:
-                current_prediction = gesture
-            else:
-                current_prediction = str(model.predict([extract_features(landmarks)])[0])
-            cv2.putText(frame, current_prediction, (20, 60),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
-            if current_prediction == stable_letter:
-                stable_count += 1
-            else:
-                stable_letter = current_prediction
+            if spacer.update(landmarks):
+                store.add_sign(' ')
+                current_prediction = 'SPACE'
+                stable_letter = ''
                 stable_count = 0
                 stored = False
-            if stable_count == STABLE_FRAMES and not stored:
-                store.add_sign(current_prediction)
-                stored = True
+            else:
+                gesture = tracker.detect(landmarks)
+                if gesture:
+                    current_prediction = gesture
+                else:
+                    current_prediction = str(model.predict([extract_features(landmarks)])[0])
+                if current_prediction == stable_letter:
+                    stable_count += 1
+                else:
+                    stable_letter = current_prediction
+                    stable_count = 0
+                    stored = False
+                if stable_count == STABLE_FRAMES and not stored and not spacer.locked():
+                    store.add_sign(current_prediction)
+                    stored = True
+            cv2.putText(frame, current_prediction, (20, 60),
+                        cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
         else:
             current_prediction = ''
             stable_letter = ''
@@ -114,4 +122,4 @@ def clear():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, threaded=True, use_reloader=False)
