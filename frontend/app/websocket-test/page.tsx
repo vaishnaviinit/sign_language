@@ -1,12 +1,17 @@
 "use client";
-import {useEffect} from "react";
-import {io} from "socket.io-client";
+import {useEffect,useState} from "react";
+import {io, Socket} from "socket.io-client";
 
+let socket: Socket;
 
-export default function WebsocketTestPage() {
+export default function WebSocketTestPage() {
+
+    const [username, setUsername] = useState("");
+    const [room, setRoom] = useState("");
+
 
     useEffect(() => {
-        const socket = io("http://localhost:5001");
+        socket = io("http://localhost:5001");
 
         socket.on("connect", () => {
             console.log("Connected",socket.id);
@@ -16,6 +21,11 @@ export default function WebsocketTestPage() {
             console.log("server:", data);
         } );
 
+        socket.on("system_message", (data) => {
+         console.log("System:", data);
+        } );
+
+
         return () => {
             socket.disconnect();
         };
@@ -23,11 +33,75 @@ export default function WebsocketTestPage() {
     }, []);
 
 
-    return(
-        <div>
-            <h1>Websocket Test Page</h1>
-        </div>
+
+
+const joinRoom = () => {
+
+    if (!username || !room) {
+      alert("Enter username and room");
+      return;
+    }
+
+    socket.emit(
+      "join_room",
+      {
+        username,
+        room
+      }
     );
 
+    console.log(
+      `${username} joined ${room}`
+    );
+  };
+
+
+
+
+
+  return (
+    <div style={{ padding: "20px" }}>
+
+      <h1>WebSocket Test Page</h1>
+
+      <input
+        type="text"
+        placeholder="Username"
+        value={username}
+        onChange={(e) =>
+          setUsername(e.target.value)
+        }
+      />
+
+      <br />
+      <br />
+
+      <input
+        type="text"
+        placeholder="Room"
+        value={room}
+        onChange={(e) =>
+          setRoom(e.target.value)
+        }
+      />
+
+      <br />
+      <br />
+
+      <button onClick={joinRoom}>
+        Join Room
+      </button>
+
+    </div>
+  );
 }
 
+
+
+
+
+
+
+
+
+    
