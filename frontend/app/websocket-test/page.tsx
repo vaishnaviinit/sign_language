@@ -8,6 +8,10 @@ export default function WebSocketTestPage() {
 
     const [username, setUsername] = useState("");
     const [room, setRoom] = useState("");
+    const [message, setMessage] = useState("");
+    const [messages, setMessages] = useState<any[]>([]);
+
+
 
 
     useEffect(() => {
@@ -18,12 +22,26 @@ export default function WebSocketTestPage() {
         });
 
         socket.on("server_message", (data) => {
-            console.log("server:", data);
+         console.log("server:", data);
         } );
 
         socket.on("system_message", (data) => {
          console.log("System:", data);
         } );
+        
+        socket.on("receive_message", (data) => {
+         console.log("Message:", data);
+
+         setMessages((prev) => [
+           ...prev,
+               data
+             ]);
+
+        });
+
+
+
+
 
 
         return () => {
@@ -54,6 +72,25 @@ const joinRoom = () => {
       `${username} joined ${room}`
     );
   };
+  
+
+const sendMessage = () => {
+
+    if (!message) {
+    return;
+  }
+
+  socket.emit(
+    "send_message",
+    {
+      username,
+      room,
+      message
+    }
+  );
+
+  setMessage("");
+};
 
 
 
@@ -91,6 +128,44 @@ const joinRoom = () => {
       <button onClick={joinRoom}>
         Join Room
       </button>
+
+      <hr />
+
+     <h2>Messages</h2>
+
+    {
+          messages.map((msg, index) => (
+             <div key={index}>
+             <strong>
+             {msg.username}
+             </strong>
+             : {msg.message}
+             </div>
+            ))
+            }
+
+
+      <br />
+      <br />
+
+      <input
+        type="text"
+        placeholder="Message"
+        value={message}
+        onChange={(e) =>
+           setMessage(e.target.value)
+  }
+/>
+
+<button onClick={sendMessage}>
+  Send
+</button>
+
+
+
+
+
+
 
     </div>
   );
