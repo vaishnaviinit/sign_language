@@ -27,23 +27,43 @@ def extract_features(landmarks):
     return features
 
 
-def write_header(writer):
-    header = ['label']
-    for i in range(21):
-        header.append('x' + str(i))
-        header.append('y' + str(i))
-    writer.writerow(header)
+def get_collected_counts():
+    counts = {}
+    if not os.path.exists(DATA_FILE):
+        return counts
+    with open(DATA_FILE, 'r') as f:
+        reader = csv.reader(f)
+        next(reader, None)
+        for row in reader:
+            if len(row) == 43:
+                label = row[0]
+                counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def write_header():
+    with open(DATA_FILE, 'w', newline='') as f:
+        writer = csv.writer(f)
+        header = ['label']
+        for i in range(21):
+            header.append('x' + str(i))
+            header.append('y' + str(i))
+        writer.writerow(header)
 
 
 def main():
+    if not os.path.exists(DATA_FILE):
+        write_header()
+
+    counts = get_collected_counts()
     camera = cv2.VideoCapture(0)
-    file_exists = os.path.exists(DATA_FILE)
-    output = open(DATA_FILE, 'a', newline='')
-    writer = csv.writer(output)
-    if not file_exists:
-        write_header(writer)
 
     for label in LABELS:
+        already = counts.get(label, 0)
+        if already >= SAMPLES_PER_LABEL:
+            print('Skipping ' + label + ' already have ' + str(already) + ' samples')
+            continue
+
         while True:
             ok, frame = camera.read()
             if not ok:
@@ -55,7 +75,10 @@ def main():
             if cv2.waitKey(1) & 0xFF == ord('s'):
                 break
 
-        collected = 0
+        collected = already
+        output = open(DATA_FILE, 'a', newline='')
+        writer = csv.writer(output)
+
         while collected < SAMPLES_PER_LABEL:
             ok, frame = camera.read()
             if not ok:
@@ -65,15 +88,18 @@ def main():
             result = hands.process(rgb)
             if result.multi_hand_landmarks:
                 landmarks = result.multi_hand_landmarks[0]
-                drawing.draw_landmarks(frame, landmarks, hand_connections)
-                writer.writerow([label] + extract_features(landmarks))
-                collected += 1
+                features = extract_features(landmarks)
+                if len(features) == 42:
+                    drawing.draw_landmarks(frame, landmarks, hand_connections)
+                    writer.writerow([label] + features)
+                    collected += 1
             cv2.putText(frame, label + ': ' + str(collected) + '/' + str(SAMPLES_PER_LABEL), (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.imshow('Collecting', frame)
             cv2.waitKey(1)
 
-    output.close()
+        output.close()
+
     camera.release()
     cv2.destroyAllWindows()
     print('Saved data to ' + DATA_FILE)

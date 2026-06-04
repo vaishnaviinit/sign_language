@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, CameraOff, Hand, Mic, Copy, Trash2, Delete, Space,
-  CheckCircle, AlertCircle, Zap, WifiOff, RotateCcw,
+  CheckCircle, AlertCircle, Zap, WifiOff, RotateCcw, Sparkles, BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePrediction } from "@/hooks/use-prediction";
@@ -20,6 +20,9 @@ export function Translator() {
   const [autoMode, setAutoMode] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [sentence, setSentence] = useState("");
+  const [loadingSentence, setLoadingSentence] = useState(false);
+  const [sentenceSaved, setSentenceSaved] = useState(false);
 
   const stabilityRef = useRef(0);
   const lastLetterRef = useRef("");
@@ -64,6 +67,32 @@ export function Translator() {
   const handleAddLetter = useCallback(() => {
     if (data.letter) setText((prev) => prev + data.letter);
   }, [data.letter]);
+
+  const handleGenerateSentence = useCallback(async () => {
+    setLoadingSentence(true);
+    setSentence("");
+    setSentenceSaved(false);
+    try {
+      const res = await fetch(`${BACKEND_URL}/sentence`, { method: "POST" });
+      const json = await res.json();
+      setSentence(json.sentence);
+    } catch {
+      setSentence("Could not connect to backend.");
+    } finally {
+      setLoadingSentence(false);
+    }
+  }, []);
+
+  const handleSaveSentence = useCallback(async () => {
+    if (!sentence) return;
+    await fetch(`${BACKEND_URL}/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sentence }),
+    });
+    setSentenceSaved(true);
+    setTimeout(() => setSentenceSaved(false), 2000);
+  }, [sentence]);
 
   const confidence = data.handDetected ? 95 + Math.random() * 4 : 0;
 
@@ -317,6 +346,52 @@ export function Translator() {
                   + Add &quot;{data.letter}&quot;
                 </button>
               )}
+            </div>
+
+            {/* RAG Sentence Generator */}
+            <div className="px-5 pt-3 pb-3 border-t border-[#E5E7EB]">
+              <Button
+                variant="glass"
+                size="md"
+                className="w-full flex items-center justify-center gap-2 bg-[#4F7DF3]/8 border-[#4F7DF3]/20 text-[#4F7DF3] hover:bg-[#4F7DF3]/15"
+                onClick={handleGenerateSentence}
+                disabled={loadingSentence || !data.backendConnected}
+              >
+                <Sparkles className={`w-4 h-4 ${loadingSentence ? "animate-spin" : ""}`} />
+                {loadingSentence ? "Generating..." : "Generate Sentence with AI"}
+              </Button>
+
+              <AnimatePresence>
+                {sentence && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="mt-3 p-3 rounded-xl bg-[#F0F4FF] border border-[#4F7DF3]/20"
+                  >
+                    <p className="text-sm text-[#1F2937] font-medium mb-2">{sentence}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setText(sentence)}
+                        className="flex-1 text-xs text-center py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-[#4F7DF3] font-semibold hover:bg-[#F3F4F6] transition-colors"
+                      >
+                        Use as Text
+                      </button>
+                      <button
+                        onClick={handleSaveSentence}
+                        disabled={sentenceSaved}
+                        className="flex-1 text-xs text-center py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-[#6B7280] font-semibold hover:bg-[#F3F4F6] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {sentenceSaved ? (
+                          <><CheckCircle className="w-3 h-3 text-[#6BCB77]" />Saved!</>
+                        ) : (
+                          <><BookmarkPlus className="w-3 h-3" />Save to Knowledge</>
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Action buttons */}

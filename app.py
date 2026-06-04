@@ -1,9 +1,12 @@
-import pickle
+﻿import pickle
 import cv2
 import mediapipe as mp
-from flask import Flask, render_template, Response, jsonify
+from flask import Flask, render_template, Response, jsonify, request
 from flask_cors import CORS
 from gesture import MotionTracker
+from rag.pipeline import run_pipeline, save_to_knowledge
+import json
+import os
 
 app = Flask(__name__)
 CORS(
@@ -26,6 +29,9 @@ hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 camera = cv2.VideoCapture(0)
 tracker = MotionTracker()
 current_prediction = ''
+sign_history = []
+
+HISTORY_FILE = 'history.json'
 
 
 def extract_features(landmarks):
@@ -44,7 +50,7 @@ def extract_features(landmarks):
 
 
 def generate_frames():
-    global current_prediction
+    global current_prediction, sign_history
     while True:
         ok, frame = camera.read()
         if not ok:
@@ -60,6 +66,10 @@ def generate_frames():
                 current_prediction = gesture
             else:
                 current_prediction = str(model.predict([extract_features(landmarks)])[0])
+            if current_prediction and (not sign_history or sign_history[-1] != current_prediction):
+                sign_history.append(current_prediction)
+                with open(HISTORY_FILE, 'w') as f:
+                    json.dump(sign_history, f)
             cv2.putText(frame, current_prediction, (20, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
         else:
@@ -84,6 +94,30 @@ def video_feed():
 @app.route('/prediction')
 def prediction():
     return jsonify({'letter': current_prediction})
+
+
+@app.route('/sentence', methods=['POST'])
+def sentence():
+    result = run_pipeline()
+    return jsonify({'sentence': result})
+
+
+@app.route('/save', methods=['POST'])
+def save():
+    data = request.get_json()
+    accepted = data.get('sentence', '')
+    if accepted:
+        save_to_knowledge(accepted)
+    return jsonify({'status': 'saved'})
+
+
+@app.route('/clear', methods=['POST'])
+def clear():
+    global sign_history
+    sign_history = []
+    if os.path.exists(HISTORY_FILE):
+        os.remove(HISTORY_FILE)
+    return jsonify({'status': 'cleared'})
 
 
 if __name__ == '__main__':
