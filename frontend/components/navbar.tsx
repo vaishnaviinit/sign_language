@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X } from "lucide-react";
+import { Zap, Menu, X, MessageCircle, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/ui/github-icon";
 
@@ -73,6 +73,19 @@ export function Navbar() {
                 GitHub
               </a>
             </Button>
+            <Button variant="outline" size="sm" asChild>
+  <a href="#chat" className="flex items-center gap-1.5">
+    <MessageCircle className="w-4 h-4" />
+    Chat
+  </a>
+</Button>
+
+<Button variant="outline" size="sm" asChild>
+  <a href="#video-call" className="flex items-center gap-1.5">
+    <Video className="w-4 h-4" />
+    Video Call
+  </a>
+</Button>
             <Button size="sm" asChild>
               <a href="#translator" className="flex items-center gap-1.5">
                 <Zap className="w-4 h-4" />
