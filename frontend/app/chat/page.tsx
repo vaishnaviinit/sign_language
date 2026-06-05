@@ -9,6 +9,7 @@ import { ChatSidebar } from "@/components/chat/ChatSidebar";
 import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
+import { SignComposer } from "@/components/chat/SignComposer";
 import { useChat } from "@/hooks/use-chat";
 
 export default function ChatPage() {
@@ -80,6 +81,10 @@ export default function ChatPage() {
                 onMenuClick={() => setSidebarOpen(true)}
               />
               <ChatMessages messages={messages} username={username} />
+              <SignComposer
+                onSend={handleSend}
+                disabled={status !== "connected"}
+              />
               <ChatInput
                 onSend={handleSend}
                 disabled={status !== "connected"}
