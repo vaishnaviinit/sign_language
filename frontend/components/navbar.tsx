@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Menu, X } from "lucide-react";
+import { Zap, Menu, X, MessageCircle, Video } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/ui/github-icon";
 
@@ -73,6 +74,19 @@ export function Navbar() {
                 GitHub
               </a>
             </Button>
+            <Button variant="outline" size="sm" asChild>
+              <Link href="/chat" className="flex items-center gap-1.5">
+                <MessageCircle className="w-4 h-4" />
+                Chat
+              </Link>
+            </Button>
+
+            <Button variant="outline" size="sm" asChild>
+              <a href="#video-call" className="flex items-center gap-1.5">
+                <Video className="w-4 h-4" />
+                Video Call
+              </a>
+            </Button>
             <Button size="sm" asChild>
               <a href="#translator" className="flex items-center gap-1.5">
                 <Zap className="w-4 h-4" />
@@ -123,6 +137,12 @@ export function Navbar() {
                     <GithubIcon className="w-4 h-4" />
                     GitHub
                   </a>
+                </Button>
+                <Button variant="outline" size="md" className="w-full" asChild>
+                  <Link href="/chat" onClick={() => setMenuOpen(false)} className="flex items-center gap-2">
+                    <MessageCircle className="w-4 h-4" />
+                    Chat
+                  </Link>
                 </Button>
                 <Button size="md" className="w-full" asChild>
                   <a href="#translator" onClick={() => setMenuOpen(false)} className="flex items-center gap-2">
