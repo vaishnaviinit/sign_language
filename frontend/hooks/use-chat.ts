@@ -43,6 +43,8 @@ export function useChat(): UseChatReturn {
     });
     s.on("connect_error", () => setStatus("disconnected"));
 
+
+
     s.on("system_message", (d: { message: string }) =>
       setMessages((p) => [
         ...p,
@@ -50,12 +52,17 @@ export function useChat(): UseChatReturn {
       ])
     );
 
+
+
+    
     s.on("receive_message", (d: { username: string; message: string }) =>
       setMessages((p) => [
         ...p,
         { id: `${++idRef.current}`, type: "chat", username: d.username, text: d.message, timestamp: Date.now() },
       ])
     );
+
+
 
     s.on("receive_prediction", (d: { username: string; prediction: string }) =>
       setMessages((p) => [
@@ -69,12 +76,20 @@ export function useChat(): UseChatReturn {
     };
   }, []);
 
+
+
+
+
   const joinRoom = useCallback((username: string, room: string) => {
     if (!socketRef.current) return;
     setMessages([]);
     setJoinedRoom(room);
     socketRef.current.emit("join_room", { username, room });
   }, []);
+
+
+
+
 
   const sendMessage = useCallback((username: string, room: string, text: string) => {
     const t = text.trim();

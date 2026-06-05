@@ -14,6 +14,8 @@ export function usePrediction() {
     fps: 0,
   });
 
+
+  
   const frameCount = useRef(0);
   const lastFpsUpdate = useRef(Date.now());
   const fpsRef = useRef(0);
