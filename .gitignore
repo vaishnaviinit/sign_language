@@ -4,7 +4,7 @@ __pycache__/
 *.pyc
 model.p
 model.pkl
-data.csv
+
 history.json
 rag/index.faiss
 rag/phrases.pkl
