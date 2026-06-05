@@ -24,7 +24,13 @@ export function usePrediction() {
   const poll = useCallback(async () => {
     abortRef.current = new AbortController();
     try {
-      const res = await fetch(`${BACKEND_URL}/prediction`, {
+      const res = await fetch(`const res = await fetch(`${BACKEND_URL}/prediction`, {
+  signal: abortRef.current.signal,
+  cache: "no-store",
+  headers: {
+    "ngrok-skip-browser-warning": "true",
+  },
+});`, {
         signal: abortRef.current.signal,
         cache: "no-store",
       });
