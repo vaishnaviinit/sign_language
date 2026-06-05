@@ -63,10 +63,29 @@ def handle_send_message(data):
     print(f"[{room}]{username}: {message}")
 
     emit(
-        "recieve_message",
+        "receive_message",
         {
             "username": username,
             "message": message
+        },
+        room=room
+    )
+
+def handle_prediction_message(data):
+
+    username = data["username"]
+    room = data["room"]
+    prediction = data["prediction"]
+
+    print(
+        f"[{room}] {username} predicted: {prediction}"
+    )
+
+    emit(
+        "receive_prediction",
+        {
+            "username": username,
+            "prediction": prediction
         },
         room=room
     )
@@ -78,6 +97,9 @@ socketio.on_event("connect", handle_connect)
 socketio.on_event("disconnect", handle_disconnect)
 socketio.on_event("join_room", handle_join_room)
 socketio.on_event("send_message", handle_send_message)
+socketio.on_event("prediction_message", handle_prediction_message)
+
+
 
 #start the server
 
