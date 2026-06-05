@@ -10,7 +10,7 @@ export default function WebSocketTestPage() {
     const [room, setRoom] = useState("");
     const [message, setMessage] = useState("");
     const [messages, setMessages] = useState<any[]>([]);
-
+    const [predictions, setPredictions] = useState<any[]>([]);
 
 
 
@@ -39,7 +39,19 @@ export default function WebSocketTestPage() {
 
         });
 
+        socket.on("receive_prediction", (data) => {
 
+         console.log(
+           "Prediction:",
+              data
+        );
+
+        setPredictions((prev) => [
+          ...prev,
+          data
+          ]);
+
+       });
 
 
 
@@ -92,7 +104,18 @@ const sendMessage = () => {
   setMessage("");
 };
 
+const sendPrediction = () => {
 
+  socket.emit(
+    "prediction_message",
+    {
+      username,
+      room,
+      prediction: "HELLO"
+    }
+  );
+
+};
 
 
 
@@ -143,6 +166,19 @@ const sendMessage = () => {
              </div>
             ))
             }
+            
+   <h2>Predictions</h2>
+
+    {
+         predictions.map((pred, index) => (
+           <div key={index}>
+           <strong>
+           {pred.username}
+           </strong>
+         : {pred.prediction}
+         </div>
+         ))
+          }
 
 
       <br />
@@ -161,7 +197,9 @@ const sendMessage = () => {
   Send
 </button>
 
-
+<button onClick={sendPrediction}>
+  Send Fake Prediction
+</button>
 
 
 
