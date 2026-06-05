@@ -20,7 +20,7 @@ CORS(
 with open('model.p', 'rb') as file:
     model = pickle.load(file)
 
-hands = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
+hands = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5)
 drawing = mp.solutions.drawing_utils
 hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 
@@ -31,18 +31,23 @@ current_prediction = ''
 STABLE_FRAMES = 10
 
 
-def extract_features(landmarks):
-    xs = [point.x for point in landmarks.landmark]
-    ys = [point.y for point in landmarks.landmark]
-    min_x = min(xs)
-    min_y = min(ys)
-    size = max(max(xs) - min_x, max(ys) - min_y)
+def extract_features(hand_landmarks):
+    groups = [[(point.x, point.y) for point in h.landmark] for h in hand_landmarks]
+    groups.sort(key=lambda points: sum(x for x, y in points) / len(points))
+    all_x = [x for points in groups for x, y in points]
+    all_y = [y for points in groups for x, y in points]
+    min_x = min(all_x)
+    min_y = min(all_y)
+    size = max(max(all_x) - min_x, max(all_y) - min_y)
     if size == 0:
         size = 1
     features = []
-    for point in landmarks.landmark:
-        features.append((point.x - min_x) / size)
-        features.append((point.y - min_y) / size)
+    for points in groups:
+        for x, y in points:
+            features.append((x - min_x) / size)
+            features.append((y - min_y) / size)
+    while len(features) < 84:
+        features.append(0.0)
     return features
 
 
@@ -60,7 +65,8 @@ def generate_frames():
         result = hands.process(rgb)
         if result.multi_hand_landmarks:
             landmarks = result.multi_hand_landmarks[0]
-            drawing.draw_landmarks(frame, landmarks, hand_connections)
+            for hand in result.multi_hand_landmarks:
+                drawing.draw_landmarks(frame, hand, hand_connections)
             if spacer.update(landmarks):
                 store.add_sign(' ')
                 current_prediction = 'SPACE'
@@ -72,7 +78,7 @@ def generate_frames():
                 if gesture:
                     current_prediction = gesture
                 else:
-                    current_prediction = str(model.predict([extract_features(landmarks)])[0])
+                    current_prediction = str(model.predict([extract_features(result.multi_hand_landmarks)])[0])
                 if current_prediction == stable_letter:
                     stable_count += 1
                 else:
