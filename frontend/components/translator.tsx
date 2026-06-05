@@ -61,7 +61,12 @@ export function Translator() {
     setTimeout(() => setCopied(false), 2000);
   }, [text]);
 
-  const handleClear = useCallback(() => setText(""), []);
+  const handleClear = useCallback(() => {
+    setText("");
+    setSentence("");
+    setSentenceSaved(false);
+    fetch(`${BACKEND_URL}/clear`, { method: "POST" }).catch(() => {});
+  }, []);
   const handleDelete = useCallback(() => setText((prev) => prev.slice(0, -1)), []);
   const handleSpace = useCallback(() => setText((prev) => prev + " "), []);
   const handleAddLetter = useCallback(() => {

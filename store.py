@@ -5,6 +5,7 @@ HISTORY_FILE = 'history.json'
 
 
 def load_history():
+    
     if not os.path.exists(HISTORY_FILE):
         return []
     try:
