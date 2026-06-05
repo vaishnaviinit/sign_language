@@ -1,4 +1,5 @@
 import pickle
+import time
 import cv2
 import mediapipe as mp
 from flask import Flask, Response, jsonify, request
@@ -28,7 +29,7 @@ camera = cv2.VideoCapture(0)
 tracker = MotionTracker()
 spacer = SpaceDetector()
 current_prediction = ''
-STABLE_FRAMES = 10
+DWELL_SECONDS = 1.0
 
 
 def extract_features(hand_landmarks):
@@ -54,7 +55,7 @@ def extract_features(hand_landmarks):
 def generate_frames():
     global current_prediction
     stable_label = ''
-    stable_count = 0
+    stable_since = 0.0
     stored = False
     while True:
         ok, frame = camera.read()
@@ -71,7 +72,7 @@ def generate_frames():
                 store.add_sign(' ')
                 current_prediction = 'SPACE'
                 stable_label = ''
-                stable_count = 0
+                stable_since = 0.0
                 stored = False
             else:
                 gesture = tracker.detect(landmarks)
@@ -80,20 +81,19 @@ def generate_frames():
                 else:
                     current_prediction = str(model.predict([extract_features(result.multi_hand_landmarks)])[0])
                 if current_prediction == stable_label:
-                    stable_count += 1
+                    if not stored and not spacer.locked() and time.time() - stable_since >= DWELL_SECONDS:
+                        store.add_sign(current_prediction)
+                        stored = True
                 else:
                     stable_label = current_prediction
-                    stable_count = 0
+                    stable_since = time.time()
                     stored = False
-                if stable_count == STABLE_FRAMES and not stored and not spacer.locked():
-                    store.add_sign(current_prediction)
-                    stored = True
             cv2.putText(frame, current_prediction, (20, 60),
                         cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 200, 0), 3)
         else:
             current_prediction = ''
             stable_label = ''
-            stable_count = 0
+            stable_since = 0.0
             stored = False
         ok, buffer = cv2.imencode('.jpg', frame)
         yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
