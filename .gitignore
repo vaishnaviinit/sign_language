@@ -10,3 +10,4 @@ rag/index.faiss
 rag/phrases.pkl
 node_modules/
 .next/
+images for phrases/
