@@ -1,4 +1,4 @@
-from flask import Flask 
+from flask import Flask,request 
 from flask_socketio import (SocketIO, emit,join_room,leave_room )
 
 
@@ -89,6 +89,36 @@ def handle_prediction_message(data):
         },
         room=room
     )
+
+@app.route("/prediction", methods=["POST"])
+def prediction():
+
+    print("ROUTE HIT")
+
+    data = request.json
+    print("DATA =", data)
+
+    username = data["username"]
+    room = data["room"]
+    prediction = data["prediction"]
+
+    print(f"[HTTP] {username} predicted: {prediction}")
+
+    socketio.emit(
+        "receive_prediction",
+        {
+            "username": username,
+            "prediction": prediction
+        },
+        room=room
+    )
+
+    print("EMIT SENT")
+
+    return {"success": True}
+
+
+
 
 
 #register websocket events manually

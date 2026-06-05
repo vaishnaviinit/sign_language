@@ -2,16 +2,26 @@
 
 import { motion } from "framer-motion";
 import { Menu, Wifi, WifiOff } from "lucide-react";
-import type { Room } from "./rooms";
 import type { ConnStatus } from "@/hooks/use-chat";
 
+// Derive two-character initials from any room name.
+// "general" → "GE", "1" → "1", "team-alpha" → "TE"
+function roomInitials(name: string): string {
+  const clean = name.trim();
+  if (!clean) return "?";
+  return clean.length >= 2
+    ? clean.slice(0, 2).toUpperCase()
+    : clean.toUpperCase();
+}
+
 interface ChatHeaderProps {
-  room: Room;
+  roomName: string;
+  username: string;
   status: ConnStatus;
   onMenuClick: () => void;
 }
 
-export function ChatHeader({ room, status, onMenuClick }: ChatHeaderProps) {
+export function ChatHeader({ roomName, username, status, onMenuClick }: ChatHeaderProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: -6 }}
@@ -24,26 +34,26 @@ export function ChatHeader({ room, status, onMenuClick }: ChatHeaderProps) {
         <button
           onClick={onMenuClick}
           className="md:hidden p-1.5 -ml-1 rounded-xl text-[#6B7280] hover:bg-gray-100 transition-colors"
-          aria-label="Open rooms"
+          aria-label="Open rooms panel"
         >
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Room avatar */}
-        <div
-          className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xs font-bold ${room.bgClass} ${room.textClass}`}
-        >
-          {room.initials}
+        {/* Room avatar — derived from room name */}
+        <div className="w-10 h-10 rounded-2xl bg-[#4F7DF3]/10 flex items-center justify-center text-xs font-bold text-[#4F7DF3] flex-shrink-0">
+          {roomInitials(roomName)}
         </div>
 
-        {/* Name + status */}
+        {/* Room name + subtitle */}
         <div>
-          <h2 className="text-sm font-bold text-[#1F2937] leading-tight">{room.name}</h2>
-          <p className="text-xs text-[#9CA3AF] mt-0.5">{room.description}</p>
+          <h2 className="text-sm font-bold text-[#1F2937] leading-tight">{roomName}</h2>
+          <p className="text-xs text-[#9CA3AF] mt-0.5">
+            Joined as <span className="font-semibold text-[#6B7280]">{username}</span>
+          </p>
         </div>
       </div>
 
-      {/* Right: connection indicator */}
+      {/* Right: live connection indicator */}
       <div className="flex items-center gap-1.5">
         {status === "connected" ? (
           <>

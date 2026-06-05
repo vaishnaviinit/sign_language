@@ -10,7 +10,6 @@ import { ChatHeader } from "@/components/chat/ChatHeader";
 import { ChatMessages } from "@/components/chat/ChatMessages";
 import { ChatInput } from "@/components/chat/ChatInput";
 import { useChat } from "@/hooks/use-chat";
-import { getRoomById } from "@/components/chat/rooms";
 
 export default function ChatPage() {
   const [username, setUsername] = useState<string>("");
@@ -19,7 +18,6 @@ export default function ChatPage() {
 
   const { status, messages, joinedRoom, joinRoom, sendMessage } = useChat();
 
-  // Load persisted username from localStorage once on mount
   useEffect(() => {
     const stored = localStorage.getItem("signsync_username") ?? "";
     setUsername(stored);
@@ -44,21 +42,16 @@ export default function ChatPage() {
     sendMessage(username, joinedRoom, text);
   };
 
-  const activeRoom = joinedRoom ? getRoomById(joinedRoom) : undefined;
-
-  // Wait until we've read localStorage before deciding to show username gate
   if (!usernameReady) return null;
 
   return (
     <>
       <Navbar />
 
-      {/* Full-viewport layout below fixed 64px navbar */}
       <div
         className="flex overflow-hidden bg-[#FAFAF8]"
         style={{ height: "100vh", paddingTop: "64px" }}
       >
-        {/* Mobile overlay */}
         {sidebarOpen && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -78,10 +71,11 @@ export default function ChatPage() {
         />
 
         <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          {joinedRoom && activeRoom ? (
+          {joinedRoom ? (
             <>
               <ChatHeader
-                room={activeRoom}
+                roomName={joinedRoom}
+                username={username}
                 status={status}
                 onMenuClick={() => setSidebarOpen(true)}
               />
@@ -100,15 +94,12 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* Username gate — shown as full-screen overlay when no username is set */}
-      {!username && (
-        <UsernameGate onSet={handleSetUsername} />
-      )}
+      {!username && <UsernameGate onSet={handleSetUsername} />}
     </>
   );
 }
 
-// ─── Username gate ───────────────────────────────────────────────────────────
+// ─── Username gate ────────────────────────────────────────────────────────────
 
 function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   const [value, setValue] = useState("");
@@ -146,7 +137,7 @@ function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
             className="w-full px-4 py-3 text-sm bg-[#F9FAFB] border border-[#E5E7EB] rounded-xl text-[#1F2937] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#4F7DF3]/20 focus:border-[#4F7DF3] transition-all"
           />
           <Button type="submit" className="w-full" size="lg" disabled={!value.trim()}>
-            Start Chatting
+            Continue
           </Button>
         </form>
       </motion.div>
@@ -154,7 +145,7 @@ function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   );
 }
 
-// ─── No-room selected prompt ──────────────────────────────────────────────────
+// ─── No room selected prompt ──────────────────────────────────────────────────
 
 function RoomPrompt({
   status,
@@ -175,13 +166,12 @@ function RoomPrompt({
           <MessageCircle className="w-10 h-10 text-[#4F7DF3]" />
         </div>
         <h2 className="text-xl font-bold text-[#1F2937] mb-2">
-          Choose a room to start communicating.
+          Join a room to start communicating.
         </h2>
         <p className="text-sm text-[#6B7280] leading-relaxed mb-4">
-          Join a room from the sidebar and start a real-time conversation.
+          Enter any room name in the sidebar. Anyone with the same room name can chat with you.
         </p>
 
-        {/* Connection status */}
         <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-[#E5E7EB] text-xs font-medium">
           <span
             className={`w-2 h-2 rounded-full ${
@@ -205,7 +195,7 @@ function RoomPrompt({
           onClick={onMenuClick}
           className="md:hidden mt-5 w-full px-5 py-2.5 text-sm font-semibold bg-[#4F7DF3] text-white rounded-xl shadow-sm hover:bg-[#3563D8] transition-colors"
         >
-          View Rooms
+          Open Rooms Panel
         </button>
       </motion.div>
     </div>
