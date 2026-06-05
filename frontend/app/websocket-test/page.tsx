@@ -15,7 +15,7 @@ export default function WebSocketTestPage() {
 
 
     useEffect(() => {
-        socket = io("http://localhost:5001");
+        socket = io("https://shoptalk-prototype-proving.ngrok-free.dev");
 
         socket.on("connect", () => {
             console.log("Connected",socket.id);

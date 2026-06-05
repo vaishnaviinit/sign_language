@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import type { PredictionData } from "@/types";
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = "https://shoptalk-prototype-proving.ngrok-free.dev";
 const POLL_INTERVAL = 200;
 
 export function usePrediction() {
