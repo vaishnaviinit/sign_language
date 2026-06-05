@@ -1,5 +1,9 @@
 flask
 flask-cors
-mediapipe==0.10.35
+mediapipe==0.10.14
 scikit-learn
 numpy
+openai
+sentence-transformers
+faiss-cpu
+python-dotenv
