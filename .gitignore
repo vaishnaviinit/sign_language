@@ -1,7 +1,12 @@
+﻿.env
 venv/
 __pycache__/
 *.pyc
-
 model.p
+model.pkl
+data.csv
 history.json
-images for phrases/
+rag/index.faiss
+rag/phrases.pkl
+node_modules/
+.next/

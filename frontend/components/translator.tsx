@@ -4,21 +4,13 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, CameraOff, Hand, Mic, Copy, Trash2, Delete, Space,
-  CheckCircle, AlertCircle, Zap, WifiOff, RotateCcw,
-  History, ChevronDown, Keyboard,
+  CheckCircle, AlertCircle, Zap, WifiOff, RotateCcw, Sparkles, BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePrediction } from "@/hooks/use-prediction";
 
+const BACKEND_URL = "http://localhost:5000";
 const STABILITY_THRESHOLD = 3;
-const HISTORY_KEY = "signsync_history";
-const MAX_HISTORY = 10;
-
-interface HistoryEntry {
-  id: string;
-  text: string;
-  timestamp: number;
-}
 
 export function Translator() {
   const { data, backendUrl } = usePrediction();
@@ -28,67 +20,13 @@ export function Translator() {
   const [autoMode, setAutoMode] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [imgLoaded, setImgLoaded] = useState(false);
-  const [history, setHistory] = useState<HistoryEntry[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
-  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [sentence, setSentence] = useState("");
+  const [loadingSentence, setLoadingSentence] = useState(false);
+  const [sentenceSaved, setSentenceSaved] = useState(false);
 
   const stabilityRef = useRef(0);
   const lastLetterRef = useRef("");
   const appendedRef = useRef(false);
-  const dataRef = useRef(data);
-  dataRef.current = data;
-  const autoModeRef = useRef(autoMode);
-  autoModeRef.current = autoMode;
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(HISTORY_KEY);
-      if (saved) setHistory(JSON.parse(saved));
-    } catch {}
-  }, []);
-
-  const saveToHistory = useCallback((t: string) => {
-    if (!t.trim()) return;
-    const entry: HistoryEntry = {
-      id: Math.random().toString(36).slice(2),
-      text: t.trim(),
-      timestamp: Date.now(),
-    };
-    setHistory((prev) => {
-      const next = [entry, ...prev].slice(0, MAX_HISTORY);
-      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
-  }, []);
-
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA") return;
-
-      if (e.key === " " && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        setText((prev) => prev + " ");
-      } else if (e.key === "Backspace" && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        setText((prev) => prev.slice(0, -1));
-      } else if (e.key === "Enter" && !e.ctrlKey && !e.metaKey) {
-        e.preventDefault();
-        const letter = dataRef.current.letter;
-        if (letter && !autoModeRef.current) {
-          setText((prev) => prev + letter);
-        }
-      } else if (e.key === "Escape") {
-        setText((prev) => {
-          if (prev.trim()) saveToHistory(prev);
-          return "";
-        });
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [saveToHistory]);
 
   useEffect(() => {
     if (!autoMode || !data.backendConnected) return;
@@ -123,42 +61,40 @@ export function Translator() {
     setTimeout(() => setCopied(false), 2000);
   }, [text]);
 
-  const handleClear = useCallback(() => {
-    saveToHistory(text);
-    setText("");
-  }, [text, saveToHistory]);
-
+  const handleClear = useCallback(() => setText(""), []);
   const handleDelete = useCallback(() => setText((prev) => prev.slice(0, -1)), []);
   const handleSpace = useCallback(() => setText((prev) => prev + " "), []);
   const handleAddLetter = useCallback(() => {
     if (data.letter) setText((prev) => prev + data.letter);
   }, [data.letter]);
 
-  const handleRestore = useCallback((entry: HistoryEntry) => {
-    setText((prev) => {
-      if (prev.trim()) saveToHistory(prev);
-      return entry.text;
-    });
-  }, [saveToHistory]);
-
-  const handleDeleteHistoryEntry = useCallback((id: string) => {
-    setHistory((prev) => {
-      const next = prev.filter((e) => e.id !== id);
-      try { localStorage.setItem(HISTORY_KEY, JSON.stringify(next)); } catch {}
-      return next;
-    });
+  const handleGenerateSentence = useCallback(async () => {
+    setLoadingSentence(true);
+    setSentence("");
+    setSentenceSaved(false);
+    try {
+      const res = await fetch(`${BACKEND_URL}/sentence`, { method: "POST" });
+      const json = await res.json();
+      setSentence(json.sentence);
+    } catch {
+      setSentence("Could not connect to backend.");
+    } finally {
+      setLoadingSentence(false);
+    }
   }, []);
 
-  const handleClearHistory = useCallback(() => {
-    setHistory([]);
-    try { localStorage.removeItem(HISTORY_KEY); } catch {}
-  }, []);
+  const handleSaveSentence = useCallback(async () => {
+    if (!sentence) return;
+    await fetch(`${BACKEND_URL}/save`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sentence }),
+    });
+    setSentenceSaved(true);
+    setTimeout(() => setSentenceSaved(false), 2000);
+  }, [sentence]);
 
   const confidence = data.handDetected ? 95 + Math.random() * 4 : 0;
-
-  const formatTime = (ts: number) => {
-    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  };
 
   return (
     <section id="translator" className="py-24 relative bg-[#F9FAFB]">
@@ -313,47 +249,6 @@ export function Translator() {
                 </div>
               ))}
             </div>
-
-            {/* Keyboard shortcuts */}
-            <div className="border-t border-[#E5E7EB] px-4 py-2.5">
-              <button
-                onClick={() => setShowShortcuts(!showShortcuts)}
-                className="w-full flex items-center justify-between text-xs text-[#9CA3AF] hover:text-[#6B7280] transition-colors"
-              >
-                <span className="flex items-center gap-1.5">
-                  <Keyboard className="w-3.5 h-3.5" />
-                  Keyboard Shortcuts
-                </span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${showShortcuts ? "rotate-180" : ""}`} />
-              </button>
-              <AnimatePresence>
-                {showShortcuts && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="pt-2.5 grid grid-cols-2 gap-x-6 gap-y-2">
-                      {[
-                        ["Space", "Add space"],
-                        ["Backspace", "Delete char"],
-                        ["Enter", "Add letter"],
-                        ["Escape", "Clear & save"],
-                      ].map(([key, desc]) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <kbd className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-[#F3F4F6] border border-[#E5E7EB] text-[#374151] leading-none whitespace-nowrap">
-                            {key}
-                          </kbd>
-                          <span className="text-[10px] text-[#9CA3AF]">{desc}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
           </div>
 
           {/* Right: Output Panel */}
@@ -438,10 +333,10 @@ export function Translator() {
               )}
             </div>
 
-            {/* Character count + Add Letter */}
+            {/* Character count */}
             <div className="flex items-center justify-between px-5 py-2 border-t border-[#E5E7EB]">
               <span className="text-[11px] text-[#9CA3AF] font-mono">
-                {text.length} chars · {text.split(" ").filter(Boolean).length} words
+                {text.length} characters · {text.split(" ").filter(Boolean).length} words
               </span>
               {!autoMode && data.letter && (
                 <button
@@ -451,6 +346,52 @@ export function Translator() {
                   + Add &quot;{data.letter}&quot;
                 </button>
               )}
+            </div>
+
+            {/* RAG Sentence Generator */}
+            <div className="px-5 pt-3 pb-3 border-t border-[#E5E7EB]">
+              <Button
+                variant="glass"
+                size="md"
+                className="w-full flex items-center justify-center gap-2 bg-[#4F7DF3]/8 border-[#4F7DF3]/20 text-[#4F7DF3] hover:bg-[#4F7DF3]/15"
+                onClick={handleGenerateSentence}
+                disabled={loadingSentence || !data.backendConnected}
+              >
+                <Sparkles className={`w-4 h-4 ${loadingSentence ? "animate-spin" : ""}`} />
+                {loadingSentence ? "Generating..." : "Generate Sentence with AI"}
+              </Button>
+
+              <AnimatePresence>
+                {sentence && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 6 }}
+                    className="mt-3 p-3 rounded-xl bg-[#F0F4FF] border border-[#4F7DF3]/20"
+                  >
+                    <p className="text-sm text-[#1F2937] font-medium mb-2">{sentence}</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setText(sentence)}
+                        className="flex-1 text-xs text-center py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-[#4F7DF3] font-semibold hover:bg-[#F3F4F6] transition-colors"
+                      >
+                        Use as Text
+                      </button>
+                      <button
+                        onClick={handleSaveSentence}
+                        disabled={sentenceSaved}
+                        className="flex-1 text-xs text-center py-1.5 rounded-lg bg-white border border-[#E5E7EB] text-[#6B7280] font-semibold hover:bg-[#F3F4F6] transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        {sentenceSaved ? (
+                          <><CheckCircle className="w-3 h-3 text-[#6BCB77]" />Saved!</>
+                        ) : (
+                          <><BookmarkPlus className="w-3 h-3" />Save to Knowledge</>
+                        )}
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Action buttons */}
@@ -473,89 +414,11 @@ export function Translator() {
                 <Delete className="w-4 h-4" />Delete
               </Button>
               <Button variant="destructive" size="md" className="col-span-2 flex items-center gap-2" onClick={handleClear} disabled={!text}>
-                <Trash2 className="w-4 h-4" />Clear &amp; Save
+                <Trash2 className="w-4 h-4" />Clear All
               </Button>
             </div>
           </div>
         </motion.div>
-
-        {/* Translation History */}
-        <AnimatePresence>
-          {history.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.3 }}
-              className="mt-6 glass rounded-2xl overflow-hidden"
-            >
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#F9FAFB] transition-colors"
-              >
-                <div className="flex items-center gap-2.5">
-                  <History className="w-4 h-4 text-[#6B7280]" />
-                  <span className="text-sm font-semibold text-[#1F2937]">Translation History</span>
-                  <span className="text-xs text-[#9CA3AF] bg-[#F3F4F6] border border-[#E5E7EB] px-2 py-0.5 rounded-full font-mono leading-none">
-                    {history.length}
-                  </span>
-                </div>
-                <ChevronDown className={`w-4 h-4 text-[#9CA3AF] transition-transform duration-200 ${showHistory ? "rotate-180" : ""}`} />
-              </button>
-
-              <AnimatePresence>
-                {showHistory && (
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <div className="border-t border-[#E5E7EB] divide-y divide-[#F3F4F6]">
-                      {history.map((entry) => (
-                        <div
-                          key={entry.id}
-                          className="flex items-center gap-3 px-5 py-3 hover:bg-[#F9FAFB] transition-colors group"
-                        >
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-mono text-[#374151] truncate">{entry.text}</p>
-                            <p className="text-[10px] text-[#9CA3AF] mt-0.5">
-                              {formatTime(entry.timestamp)} · {entry.text.length} chars
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleRestore(entry)}
-                              className="text-xs text-[#4F7DF3] hover:text-[#3563D8] font-medium px-2 py-1 rounded-lg hover:bg-[#4F7DF3]/8 transition-all"
-                            >
-                              Restore
-                            </button>
-                            <button
-                              onClick={() => handleDeleteHistoryEntry(entry.id)}
-                              className="p-1 rounded-lg text-[#D1D5DB] hover:text-red-400 hover:bg-red-50 transition-all"
-                              aria-label="Delete entry"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="px-5 py-3 border-t border-[#E5E7EB] flex justify-end">
-                      <button
-                        onClick={handleClearHistory}
-                        className="text-xs text-red-400 hover:text-red-500 font-medium transition-colors"
-                      >
-                        Clear all history
-                      </button>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Setup instructions */}
         {!data.backendConnected && (

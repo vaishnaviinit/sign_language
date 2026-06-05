@@ -1,5 +1,5 @@
 flask
 flask-cors
-mediapipe==0.10.20
+mediapipe==0.10.35
 scikit-learn
 numpy
