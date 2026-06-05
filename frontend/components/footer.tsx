@@ -12,6 +12,8 @@ const techStack = [
 const contributors = [
   { name: "Vaishnavi Chaudhary", role: "ML & Backend", initials: "VC", color: "from-[#4F7DF3]/20 to-[#6EC6CA]/20 text-[#4F7DF3]" },
   { name: "Shresth Samyak", role: "Frontend & UI", initials: "SS", color: "from-[#6EC6CA]/20 to-[#6BCB77]/20 text-[#6EC6CA]" },
+  { name: "Kanishka Sharma", role: "ML & Dataset Training", initials: "KS", color: "from-[#F59E0B]/20 to-[#F59E0B]/10 text-[#F59E0B]" },
+  { name: "Livleen Kaur", role: "Research & Documentation", initials: "LK", color: "from-[#A78BFA]/20 to-[#A78BFA]/10 text-[#A78BFA]" },
 ];
 
 export function Footer() {
@@ -62,15 +64,15 @@ export function Footer() {
           {/* Contributors */}
           <div>
             <p className="text-xs font-mono text-[#9CA3AF] uppercase tracking-wider mb-4">Contributors</p>
-            <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
               {contributors.map((person) => (
-                <div key={person.name} className="flex items-center gap-3">
-                  <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${person.color} border border-[#E5E7EB] flex items-center justify-center text-xs font-bold shadow-sm`}>
+                <div key={person.name} className="flex items-center gap-2">
+                  <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${person.color} border border-[#E5E7EB] flex items-center justify-center text-xs font-bold shadow-sm flex-shrink-0`}>
                     {person.initials}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#1F2937]">{person.name}</p>
-                    <p className="text-xs text-[#9CA3AF]">{person.role}</p>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[#1F2937] truncate">{person.name}</p>
+                    <p className="text-xs text-[#9CA3AF] truncate">{person.role}</p>
                   </div>
                 </div>
               ))}

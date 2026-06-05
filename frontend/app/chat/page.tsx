@@ -104,7 +104,7 @@ export default function ChatPage() {
   );
 }
 
-// ─── Username gate ────────────────────────────────────────────────────────────
+// ─── Username gate 
 
 function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   const [value, setValue] = useState("");
@@ -150,7 +150,7 @@ function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   );
 }
 
-// ─── No room selected prompt ──────────────────────────────────────────────────
+//  No room selected prompt 
 
 function RoomPrompt({
   status,

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Camera, CameraOff, Hand, Mic, Copy, Trash2, Delete, Space,
-  CheckCircle, AlertCircle, Zap, WifiOff, RotateCcw, Sparkles, BookmarkPlus,
+  CheckCircle, Zap, WifiOff, RotateCcw, Sparkles, BookmarkPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePrediction } from "@/hooks/use-prediction";
@@ -425,28 +425,7 @@ export function Translator() {
           </div>
         </motion.div>
 
-        {/* Setup instructions */}
-        {!data.backendConnected && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6 bg-white rounded-2xl border border-[#E5E7EB] p-5 shadow-sm"
-          >
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-400 mt-0.5 shrink-0" />
-              <div>
-                <p className="text-sm font-semibold text-[#1F2937] mb-2">Quick Setup</p>
-                <ol className="text-sm text-[#6B7280] space-y-1.5 list-decimal list-inside">
-                  <li>Install dependencies: <code className="font-mono text-xs bg-[#F3F4F6] px-1.5 py-0.5 rounded text-[#374151]">pip install -r requirements.txt</code></li>
-                  <li>Train the model: <code className="font-mono text-xs bg-[#F3F4F6] px-1.5 py-0.5 rounded text-[#374151]">python train_model.py</code></li>
-                  <li>Start the backend: <code className="font-mono text-xs bg-[#F3F4F6] px-1.5 py-0.5 rounded text-[#374151]">python app.py</code></li>
-                  <li>Reload this page and start signing!</li>
-                </ol>
-              </div>
-            </div>
-          </motion.div>
-        )}
+
       </div>
     </section>
   );
