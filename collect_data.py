@@ -3,27 +3,34 @@ import csv
 import cv2
 import mediapipe as mp
 
-LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y']
+LABELS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y',
+          'how are you', 'i need help', 'please', 'thirsty', 'sick', 'understand',
+          'good morning', 'happy birthday', 'where', 'again', 'wait', 'meet']
 SAMPLES_PER_LABEL = 200
 DATA_FILE = 'data.csv'
 
-hands = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.5)
+hands = mp.solutions.hands.Hands(static_image_mode=False, max_num_hands=2, min_detection_confidence=0.5)
 drawing = mp.solutions.drawing_utils
 hand_connections = mp.solutions.hands.HAND_CONNECTIONS
 
 
-def extract_features(landmarks):
-    xs = [point.x for point in landmarks.landmark]
-    ys = [point.y for point in landmarks.landmark]
-    min_x = min(xs)
-    min_y = min(ys)
-    size = max(max(xs) - min_x, max(ys) - min_y)
+def extract_features(hand_landmarks):
+    groups = [[(point.x, point.y) for point in h.landmark] for h in hand_landmarks]
+    groups.sort(key=lambda points: sum(x for x, y in points) / len(points))
+    all_x = [x for points in groups for x, y in points]
+    all_y = [y for points in groups for x, y in points]
+    min_x = min(all_x)
+    min_y = min(all_y)
+    size = max(max(all_x) - min_x, max(all_y) - min_y)
     if size == 0:
         size = 1
     features = []
-    for point in landmarks.landmark:
-        features.append((point.x - min_x) / size)
-        features.append((point.y - min_y) / size)
+    for points in groups:
+        for x, y in points:
+            features.append((x - min_x) / size)
+            features.append((y - min_y) / size)
+    while len(features) < 84:
+        features.append(0.0)
     return features
 
 
@@ -35,7 +42,7 @@ def get_collected_counts():
         reader = csv.reader(f)
         next(reader, None)
         for row in reader:
-            if len(row) == 43:
+            if len(row) == 85:
                 label = row[0]
                 counts[label] = counts.get(label, 0) + 1
     return counts
@@ -45,9 +52,8 @@ def write_header():
     with open(DATA_FILE, 'w', newline='') as f:
         writer = csv.writer(f)
         header = ['label']
-        for i in range(21):
-            header.append('x' + str(i))
-            header.append('y' + str(i))
+        for i in range(84):
+            header.append('f' + str(i))
         writer.writerow(header)
 
 
@@ -69,7 +75,7 @@ def main():
             if not ok:
                 continue
             frame = cv2.flip(frame, 1)
-            cv2.putText(frame, 'Show sign ' + label + '  -  press S to start', (20, 40),
+            cv2.putText(frame, 'Show ' + label + '  -  press S to start', (20, 40),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
             cv2.imshow('Collecting', frame)
             if cv2.waitKey(1) & 0xFF == ord('s'):
@@ -87,10 +93,10 @@ def main():
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             result = hands.process(rgb)
             if result.multi_hand_landmarks:
-                landmarks = result.multi_hand_landmarks[0]
-                features = extract_features(landmarks)
-                if len(features) == 42:
-                    drawing.draw_landmarks(frame, landmarks, hand_connections)
+                features = extract_features(result.multi_hand_landmarks)
+                if len(features) == 84:
+                    for landmarks in result.multi_hand_landmarks:
+                        drawing.draw_landmarks(frame, landmarks, hand_connections)
                     writer.writerow([label] + features)
                     collected += 1
             cv2.putText(frame, label + ': ' + str(collected) + '/' + str(SAMPLES_PER_LABEL), (20, 40),
