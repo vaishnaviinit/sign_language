@@ -120,6 +120,27 @@ def prediction():
 
 
 
+def handle_typing_start(data):
+    username = data["username"]
+    room = data["room"]
+    emit(
+        "user_typing",
+        {"username": username, "isTyping": True},
+        room=room,
+        include_self=False
+    )
+
+def handle_typing_stop(data):
+    username = data["username"]
+    room = data["room"]
+    emit(
+        "user_typing",
+        {"username": username, "isTyping": False},
+        room=room,
+        include_self=False
+    )
+
+
 #register websocket events manually
 
 socketio.on_event("connect", handle_connect)
@@ -127,6 +148,8 @@ socketio.on_event("disconnect", handle_disconnect)
 socketio.on_event("join_room", handle_join_room)
 socketio.on_event("send_message", handle_send_message)
 socketio.on_event("prediction_message", handle_prediction_message)
+socketio.on_event("typing_start", handle_typing_start)
+socketio.on_event("typing_stop", handle_typing_stop)
 
 
 

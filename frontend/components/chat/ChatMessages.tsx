@@ -1,9 +1,34 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { useEffect, useRef, useState, Fragment } from "react";
+import type { ReactNode } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Sparkles, ChevronDown } from "lucide-react";
 import type { ChatMessage } from "@/hooks/use-chat";
+
+// ─── Date helpers ──────────────────────────────────────────────────────────────
+
+function isSameDay(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function formatDateLabel(timestamp: number): string {
+  const date = new Date(timestamp);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (isSameDay(date, today)) return "Today";
+  if (isSameDay(date, yesterday)) return "Yesterday";
+  return date.toLocaleDateString(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleTimeString([], {
@@ -12,51 +37,205 @@ function formatTime(ts: number): string {
   });
 }
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
 interface ChatMessagesProps {
   messages: ChatMessage[];
   username: string;
+  typingUsers?: string[];
 }
 
-export function ChatMessages({ messages, username }: ChatMessagesProps) {
+// ─── Main component ───────────────────────────────────────────────────────────
+
+const SCROLL_THRESHOLD = 120;
+
+export function ChatMessages({ messages, username, typingUsers = [] }: ChatMessagesProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const isAtBottomRef = useRef(true);
+  const prevMsgCountRef = useRef(0);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [scrollBtnUnread, setScrollBtnUnread] = useState(0);
+
+  const handleScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const dist = el.scrollHeight - el.scrollTop - el.clientHeight;
+    const atBottom = dist <= SCROLL_THRESHOLD;
+    isAtBottomRef.current = atBottom;
+    setShowScrollBtn(!atBottom);
+    if (atBottom) setScrollBtnUnread(0);
+  };
 
   useEffect(() => {
+    const curr = messages.length;
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = curr;
+
+    if (curr < prev) {
+      // Room switched — messages cleared
+      isAtBottomRef.current = true;
+      setShowScrollBtn(false);
+      setScrollBtnUnread(0);
+      return;
+    }
+    if (curr === prev) return;
+
+    if (isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+      setScrollBtnUnread(0);
+    } else {
+      setScrollBtnUnread((c) => c + (curr - prev));
+    }
+  }, [messages]);
+
+  // Scroll into view when typing indicator appears
+  useEffect(() => {
+    if (typingUsers.length > 0 && isAtBottomRef.current) {
+      bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [typingUsers.length]);
+
+  const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages.length]);
+    setScrollBtnUnread(0);
+  };
 
   return (
-    <div className="flex-1 overflow-y-auto bg-[#FAFAF8] px-4 py-5 no-scrollbar">
-      {messages.length === 0 ? (
-        <EmptyRoom />
-      ) : (
-        <div className="space-y-2">
-          {messages.map((msg, i) => {
-            if (msg.type === "system") {
-              return <SystemBubble key={msg.id} text={msg.text} />;
-            }
-            if (msg.type === "prediction") {
+    <div className="flex-1 relative overflow-hidden flex flex-col bg-[#FAFAF8]">
+      {/* Scrollable messages area */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-4 py-5 no-scrollbar"
+      >
+        {messages.length === 0 ? (
+          <EmptyRoom />
+        ) : (
+          <div className="space-y-2">
+            {messages.map((msg, i) => {
+              const prev = i > 0 ? messages[i - 1] : null;
+              const showSep =
+                !prev ||
+                !isSameDay(new Date(prev.timestamp), new Date(msg.timestamp));
+
+              let bubble: ReactNode;
+              if (msg.type === "system") {
+                bubble = <SystemBubble text={msg.text} />;
+              } else if (msg.type === "prediction") {
+                bubble = (
+                  <PredictionBubble
+                    msg={msg}
+                    isMine={msg.username === username}
+                    index={i}
+                  />
+                );
+              } else {
+                bubble = (
+                  <ChatBubble
+                    msg={msg}
+                    isMine={msg.username === username}
+                    index={i}
+                  />
+                );
+              }
+
               return (
-                <PredictionBubble
-                  key={msg.id}
-                  msg={msg}
-                  isMine={msg.username === username}
-                  index={i}
-                />
+                <Fragment key={msg.id}>
+                  {showSep && (
+                    <DateSeparator label={formatDateLabel(msg.timestamp)} />
+                  )}
+                  {bubble}
+                </Fragment>
               );
-            }
-            return (
-              <ChatBubble
-                key={msg.id}
-                msg={msg}
-                isMine={msg.username === username}
-                index={i}
-              />
-            );
-          })}
-        </div>
-      )}
-      <div ref={bottomRef} />
+            })}
+          </div>
+        )}
+
+        <AnimatePresence>
+          {typingUsers.length > 0 && (
+            <TypingIndicator key="typing" users={typingUsers} />
+          )}
+        </AnimatePresence>
+
+        <div ref={bottomRef} />
+      </div>
+
+      {/* Scroll-to-bottom button */}
+      <AnimatePresence>
+        {showScrollBtn && (
+          <motion.button
+            key="scroll-btn"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: 0.15 }}
+            onClick={scrollToBottom}
+            className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-white border border-[#E5E7EB] shadow-md flex items-center justify-center hover:bg-[#4F7DF3]/8 transition-colors z-10"
+            aria-label="Scroll to latest messages"
+          >
+            {scrollBtnUnread > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-[#4F7DF3] text-white text-[9px] font-bold flex items-center justify-center leading-none">
+                {scrollBtnUnread > 99 ? "99+" : scrollBtnUnread}
+              </span>
+            )}
+            <ChevronDown className="w-4 h-4 text-[#4F7DF3]" />
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+// ─── Date separator ───────────────────────────────────────────────────────────
+
+function DateSeparator({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3 my-3">
+      <div className="flex-1 h-px bg-[#E5E7EB]" />
+      <span className="text-[11px] font-medium text-[#9CA3AF] whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-[#E5E7DF]" />
+    </div>
+  );
+}
+
+// ─── Typing indicator ─────────────────────────────────────────────────────────
+
+function TypingIndicator({ users }: { users: string[] }) {
+  const label =
+    users.length === 1
+      ? `${users[0]} is typing...`
+      : users.length === 2
+      ? `${users[0]} and ${users[1]} are typing...`
+      : `${users[0]}, ${users[1]}, and ${users.length - 2} more are typing...`;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 4 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center gap-2 px-2 pt-2 pb-1"
+    >
+      <div className="flex gap-[3px] items-center">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            className="w-1.5 h-1.5 bg-[#9CA3AF] rounded-full"
+            animate={{ y: [0, -3, 0] }}
+            transition={{
+              duration: 0.6,
+              repeat: Infinity,
+              delay: i * 0.15,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+      <span className="text-xs text-[#9CA3AF]">{label}</span>
+    </motion.div>
   );
 }
 

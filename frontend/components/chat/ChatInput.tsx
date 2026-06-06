@@ -8,11 +8,14 @@ import { Button } from "@/components/ui/button";
 interface ChatInputProps {
   onSend: (text: string) => void;
   disabled?: boolean;
+  onTypingChange?: (isTyping: boolean) => void;
 }
 
-export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
+export function ChatInput({ onSend, disabled = false, onTypingChange }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isTypingRef = useRef(false);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -22,13 +25,53 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
     el.style.height = Math.min(el.scrollHeight, 120) + "px";
   }, [message]);
 
+  // Cleanup debounce timer on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+  }, []);
+
+  const stopTyping = () => {
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    if (isTypingRef.current) {
+      isTypingRef.current = false;
+      onTypingChange?.(false);
+    }
+  };
+
   const handleSend = () => {
     const trimmed = message.trim();
     if (!trimmed || disabled) return;
+    stopTyping();
     onSend(trimmed);
     setMessage("");
-    // Reset height after clearing
     if (textareaRef.current) textareaRef.current.style.height = "auto";
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setMessage(val);
+
+    if (!onTypingChange) return;
+
+    if (!val.trim()) {
+      stopTyping();
+      return;
+    }
+
+    // Emit typing start only on transition from idle → typing
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      onTypingChange(true);
+    }
+
+    // Reset debounce — stop typing after 1s of inactivity
+    if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    typingTimerRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      onTypingChange(false);
+    }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -66,7 +109,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
         <textarea
           ref={textareaRef}
           value={message}
-          onChange={(e) => setMessage(e.target.value)}
+          onChange={handleChange}
           onKeyDown={handleKeyDown}
           placeholder={disabled ? "Waiting for server..." : "Type a message... (Enter to send)"}
           rows={1}

@@ -23,6 +23,8 @@ export interface UseChatReturn {
   joinedRoom: string | null;
   joinRoom: (username: string, room: string) => void;
   sendMessage: (username: string, room: string, text: string) => void;
+  typingUsers: string[];
+  emitTyping: (username: string, room: string, isTyping: boolean) => void;
 }
 
 export function useChat(): UseChatReturn {
@@ -30,6 +32,7 @@ export function useChat(): UseChatReturn {
   const [status, setStatus] = useState<ConnStatus>("connecting");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [joinedRoom, setJoinedRoom] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const idRef = useRef(0);
 
   useEffect(() => {
@@ -43,8 +46,6 @@ export function useChat(): UseChatReturn {
     });
     s.on("connect_error", () => setStatus("disconnected"));
 
-
-
     s.on("system_message", (d: { message: string }) =>
       setMessages((p) => [
         ...p,
@@ -52,17 +53,12 @@ export function useChat(): UseChatReturn {
       ])
     );
 
-
-
-    
     s.on("receive_message", (d: { username: string; message: string }) =>
       setMessages((p) => [
         ...p,
         { id: `${++idRef.current}`, type: "chat", username: d.username, text: d.message, timestamp: Date.now() },
       ])
     );
-
-
 
     s.on("receive_prediction", (d: { username: string; prediction: string }) =>
       setMessages((p) => [
@@ -71,25 +67,26 @@ export function useChat(): UseChatReturn {
       ])
     );
 
+    s.on("user_typing", (d: { username: string; isTyping: boolean }) =>
+      setTypingUsers((prev) =>
+        d.isTyping
+          ? prev.includes(d.username) ? prev : [...prev, d.username]
+          : prev.filter((u) => u !== d.username)
+      )
+    );
+
     return () => {
       s.disconnect();
     };
   }, []);
 
-
-
-
-
   const joinRoom = useCallback((username: string, room: string) => {
     if (!socketRef.current) return;
     setMessages([]);
+    setTypingUsers([]);
     setJoinedRoom(room);
     socketRef.current.emit("join_room", { username, room });
   }, []);
-
-
-
-
 
   const sendMessage = useCallback((username: string, room: string, text: string) => {
     const t = text.trim();
@@ -97,5 +94,10 @@ export function useChat(): UseChatReturn {
     socketRef.current.emit("send_message", { username, room, message: t });
   }, []);
 
-  return { status, messages, joinedRoom, joinRoom, sendMessage };
+  const emitTyping = useCallback((username: string, room: string, isTyping: boolean) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit(isTyping ? "typing_start" : "typing_stop", { username, room });
+  }, []);
+
+  return { status, messages, joinedRoom, joinRoom, sendMessage, typingUsers, emitTyping };
 }

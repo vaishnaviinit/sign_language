@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import { motion } from "framer-motion";
 import { MessageCircle } from "lucide-react";
 import { Navbar } from "@/components/navbar";
@@ -17,7 +17,46 @@ export default function ChatPage() {
   const [usernameReady, setUsernameReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const { status, messages, joinedRoom, joinRoom, sendMessage } = useChat();
+  const { status, messages, joinedRoom, joinRoom, sendMessage, typingUsers, emitTyping } = useChat();
+
+  // ─── Unread message counter ───────────────────────────────────────────────────
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isTabVisibleRef = useRef(true);
+  const lastMsgCountRef = useRef(0);
+
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") {
+        isTabVisibleRef.current = true;
+        setUnreadCount(0);
+      } else {
+        isTabVisibleRef.current = false;
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, []);
+
+  useEffect(() => {
+    const prev = lastMsgCountRef.current;
+    const curr = messages.length;
+    lastMsgCountRef.current = curr;
+    if (curr <= prev || isTabVisibleRef.current) return;
+    const newMsgs = messages.slice(prev);
+    const incoming = newMsgs.filter(
+      (m) => m.type !== "system" && m.username !== username
+    ).length;
+    if (incoming > 0) setUnreadCount((c) => c + incoming);
+  }, [messages, username]);
+
+  useEffect(() => {
+    document.title = unreadCount > 0 ? `(${unreadCount}) SignSync Chat` : "SignSync Chat";
+    return () => {
+      document.title = "SignSync Chat";
+    };
+  }, [unreadCount]);
+
+  // ─── Existing handlers ────────────────────────────────────────────────────────
 
   useEffect(() => {
     const stored = localStorage.getItem("signsync_username") ?? "";
@@ -36,12 +75,21 @@ export default function ChatPage() {
     if (!username) return;
     joinRoom(username, roomId);
     setSidebarOpen(false);
+    setUnreadCount(0);
   };
 
   const handleSend = (text: string) => {
     if (!username || !joinedRoom) return;
     sendMessage(username, joinedRoom, text);
   };
+
+  const handleTypingChange = useCallback(
+    (isTyping: boolean) => {
+      if (!username || !joinedRoom) return;
+      emitTyping(username, joinedRoom, isTyping);
+    },
+    [username, joinedRoom, emitTyping]
+  );
 
   if (!usernameReady) return null;
 
@@ -80,7 +128,11 @@ export default function ChatPage() {
                 status={status}
                 onMenuClick={() => setSidebarOpen(true)}
               />
-              <ChatMessages messages={messages} username={username} />
+              <ChatMessages
+                messages={messages}
+                username={username}
+                typingUsers={typingUsers}
+              />
               <SignComposer
                 onSend={handleSend}
                 disabled={status !== "connected"}
@@ -88,6 +140,7 @@ export default function ChatPage() {
               <ChatInput
                 onSend={handleSend}
                 disabled={status !== "connected"}
+                onTypingChange={handleTypingChange}
               />
             </>
           ) : (
@@ -104,12 +157,12 @@ export default function ChatPage() {
   );
 }
 
-// ─── Username gate 
+// ─── Username gate ────────────────────────────────────────────────────────────
 
 function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   const [value, setValue] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     onSet(value);
   };
@@ -150,7 +203,7 @@ function UsernameGate({ onSet }: { onSet: (name: string) => void }) {
   );
 }
 
-//  No room selected prompt 
+// ─── No room selected prompt ──────────────────────────────────────────────────
 
 function RoomPrompt({
   status,
