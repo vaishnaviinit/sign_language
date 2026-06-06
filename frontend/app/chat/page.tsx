@@ -23,6 +23,7 @@ export default function ChatPage() {
   const [unreadCount, setUnreadCount] = useState(0);
   const isTabVisibleRef = useRef(true);
   const lastMsgCountRef = useRef(0);
+  const autoJoinedRef = useRef(false);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -76,7 +77,22 @@ export default function ChatPage() {
     joinRoom(username, roomId);
     setSidebarOpen(false);
     setUnreadCount(0);
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}?room=${encodeURIComponent(roomId)}`
+    );
   };
+
+  useEffect(() => {
+    if (autoJoinedRef.current) return;
+    if (!username || status !== "connected" || joinedRoom) return;
+    const room = new URLSearchParams(window.location.search).get("room");
+    if (room) {
+      autoJoinedRef.current = true;
+      joinRoom(username, room);
+    }
+  }, [username, status, joinedRoom, joinRoom]);
 
   const handleSend = (text: string) => {
     if (!username || !joinedRoom) return;
