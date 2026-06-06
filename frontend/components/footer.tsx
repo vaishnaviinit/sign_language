@@ -10,9 +10,9 @@ const techStack = [
 ];
 
 const contributors = [
-  { name: "Vaishnavi Chaudhary", role: "ML & Backend", initials: "VC", color: "from-[#4F7DF3]/20 to-[#6EC6CA]/20 text-[#4F7DF3]" },
-  { name: "Shresth Samyak", role: "Frontend & UI", initials: "SS", color: "from-[#6EC6CA]/20 to-[#6BCB77]/20 text-[#6EC6CA]" },
-  { name: "Kanishka Sharma", role: "ML & Dataset Training", initials: "KS", color: "from-[#F59E0B]/20 to-[#F59E0B]/10 text-[#F59E0B]" },
+  { name: "Vaishnavi Chaudhary", role: "Frontend & Backend", initials: "VC", color: "from-[#4F7DF3]/20 to-[#6EC6CA]/20 text-[#4F7DF3]" },
+  { name: "Shresth Samyak", role: "ML & Dataset Training", initials: "SS", color: "from-[#6EC6CA]/20 to-[#6BCB77]/20 text-[#6EC6CA]" },
+  { name: "Kanishka Sharma", role: "RAG ", initials: "KS", color: "from-[#F59E0B]/20 to-[#F59E0B]/10 text-[#F59E0B]" },
   { name: "Livleen Kaur", role: "Research & Documentation", initials: "LK", color: "from-[#A78BFA]/20 to-[#A78BFA]/10 text-[#A78BFA]" },
 ];
 
